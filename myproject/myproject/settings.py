@@ -1,4 +1,5 @@
 from pathlib import Path
+from  datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -26,7 +27,32 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'myapp'
+    'rest_framework',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
 ]
+
+REST_FRAMEWORK ={
+    'DEFAULT_AUTHENTICATION_CLASSES':(
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES':(
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+    'DEFAULT_THROTTLE_CLASSESS':[
+        'rest_framework.throttling.AnnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+ 
+    #sensible defaults, override or add scoped throttles below
+
+    'DEFAULT_THROTTLE_RATES':{
+        'anon': '100/day',
+        'user':'1000/daya',
+        'login':'5/minutes',
+        'token-refresh':'10/minute',
+    },
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -56,6 +82,19 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'myproject.wsgi.application'
+
+
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME':timedelta(minutes=5), #short-lived access token
+    'REFRESH_TOKEN_LIFETIME':timedelta(days=7),   #refresh lifetime
+    'ROTATE_REFRESH_TOKENS':True,   #issue new refresh token on refresh
+    'BLACK_AFTER_ROTATION':True, #blacklist used refresh token
+    'UPDATE_LAST_LOGIN':False,   # optional; set True if  needed 
+
+
+}
+
 
 
 # Database
