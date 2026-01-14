@@ -1,66 +1,80 @@
 from .models import User
-from .seriaizers import UserSerializer,StudentSerializer
-from django.contrib.auth import authenticate,login
-from  rest_framework import status
-from  rest_framework.response import Response
+from .seriaizers import UserSerializer, StudentSerializer
+from django.contrib.auth import authenticate, login
+from rest_framework import status
+from rest_framework.response import Response
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 
 
-
 class UserRegistrationView(APIView):
-    def post(self,request):
+    def post(self, request):
         serializer = UserSerializer(data=request.data)
+        
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-
 
 
 class UserLoginView(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
         username = request.data.get('username')
-        password  = request.data.get('password')
+        password = request.data.get('password')
 
+        user = authenticate(request, username=username, password=password)
 
-        user = authenticate(request, username=username,password=password)
         if user is not None:
-            login(request,user)
-            token, created  = Token.objects.get_or_create(user=user)
+            login(request, user)
+            
+            token, created = Token.objects.get_or_create(user=user)
+            
             if created:
-                token.delete()  #Delete the token if it was already created
+                token.delete()  # delete the token if it was already created
                 token = Token.objects.create(user=user)
-            return Response({'token':token.key, 'username':user.username,'role':user.role})
-        else:
-            return Response({'message':'Invalid  username or password'}, status=status.HTTP_401_UNAUTHORIZED)
-        
+
+            response_data = {
+                'token': token.key,
+                'username': user.username,
+                'role': user.role,
+            }
+
+            if user.role == 'student':
+                student = user.student_account
+                if student is not None:
+                    student_data = StudentSerializer(student).data
+                    response_data['data'] = student_data
+
+            return Response(response_data)
+
+        return Response(
+            {'message': 'Invalid username or password'},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
 
 
-
-
-class  UserLogoutView(APIView):
+class UserLogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self,request):
-        print(request.headers)
+    def post(self, request):
+        print(request.headers)  # ← consider removing in production
+        
         token_key = request.auth.key
         token = Token.objects.get(key=token_key)
         token.delete()
 
-        return Response({'detail':'Successfully logged out.'})
+        return Response({'detail': 'Successfully logged out.'})
 
 
-
-class  StudentRegistrationView(APIView):
-    def post(self,request):
+class StudentRegistrationView(APIView):
+    def post(self, request):
         serializer = StudentSerializer(data=request.data)
+        
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.data, status=status.HTTT_400_BAD_REQUEST)
         
-    
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
