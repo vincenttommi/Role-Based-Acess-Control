@@ -45,6 +45,7 @@ class UserLoginView(ObtainAuthToken):
             if user.role == 'student':
                 student = user.student_account
                 if student is not None:
+                    #adding student data to the response data
                     student_data = StudentSerializer(student).data
                     response_data['data'] = student_data
 
